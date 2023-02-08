@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Máscara Webcam</title>
+ 
+<style>
+body{
+  margin: 0;
+  padding: 0;
+  background-color: black;
+  color: white;
+  text-align: center;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+#container {
+	margin: 0px auto;
+  position: relative;
+  display: inline-block;
+}
+img {
+	width: 100%;
+	height: 100%;
+  position: absolute;
+  z-index: 1;
+}
+video {
+	width: 100%;
+	height: 100%;
+  background-color: #666;
+}
+.select>select{
+    width: 50%;
+    margin: 2rem;
+    padding: 10px;
+}
+
+button{
+  padding: 5px;
+  font-size: 20px;
+  border-radius: 10px;
+  color: white;
+  background-color: rgb(24, 113, 255);
+}
+
+</style>
+</head>
+ 
+<body>
+    <h1>
+        Webcam Feed
+    </h1>
+	<h4>Se nada acontecer, tente abrir em outro navegador como Google Chrome</h4>
+	<h5>Você deve dar permissão persistente a câmera. <a href="tutorial.html">Exemplos</a></h5>
+<div id="container">
+  <img src="cam1.png" alt="">
+	<video autoplay="true" id="video1">
+	</video>
+</div>
+<div id="container">
+  <img src="cam2.png" alt="">
+	<video autoplay="true" id="video2">
+	</video>
+</div>
+<div>
+    <div class="select">
+        <label for="videoSource1">Camera 1:</label>
+        <select id="videoSource1"></select>
+        <br>
+        <label for="videoSource2">Camera 2:</label>
+        <select id="videoSource2"></select>
+    <div>
+    <button id="toggleMask" style="background-color: green;">Visibilidade Máscara</button>
+    <br><br>
+    <button id="toggleAdvanced">Config 🔽</button>
+    <br>
+    <p id="advanced">
+      <span>Width:</span><input type="number" id="adjust" value="640" name="width">
+      <span>Height:</span><input type="number" id="adjust" value="480" name="height">
+    </p>
+    <br>
+</div>
+<script type="module">
+  const advanced = document.querySelector("#advanced")
+  const avancado = document.querySelector("#toggleAdvanced")
+  const advStored = localStorage.getItem('advanced')
+  advanced.hidden = advStored ? advStored : false
+  avancado.onclick = function(){
+    if(advanced.hidden == false){
+      advanced.hidden = true
+      localStorage.setItem('advanced', true)
+      return
+    }
+    localStorage.setItem('advanced', false)
+    advanced.hidden = false
+  }
+
+  const containerSize = document.querySelectorAll("#adjust")
+  const containers = document.querySelectorAll('#container')
+
+  containerSize.forEach((element)=>{
+    let property = element.name
+
+    const storedSize = localStorage.getItem(property)
+    storedSize ? element.value = storedSize : null
+    
+    let size =  element.value
+    containers.forEach((element)=>{
+      element.style[property] = size+"px"
+      })
+      
+      element.onchange = function(){
+        let property = this.name
+        let size = this.value
+        
+      localStorage.setItem(property, size)
+      containers.forEach((element)=>{
+        element.style[property] = size+"px"
+      })
+    }
+  })
+  const toggle = document.querySelector("#toggleMask")
+  toggle.onclick = toggleMask
+  function toggleMask(){
+    const img = document.querySelectorAll('img')
+
+    img.forEach((element)=>{
+      if(element.hidden == false){
+        element.hidden = true
+        toggle.style.backgroundColor = "red"
+        return
+      }
+      toggle.style.backgroundColor = "green"
+      element.hidden = false
+    })
+  }
+
+  const TirarCamera = (camera) =>{
+    try {
+      const stream = camera.srcObject
+      const tracks = stream.getTracks()
+      tracks.forEach(element => element.stop());
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+const options1 = document.querySelector('#videoSource1');
+const options2 = document.querySelector('#videoSource2');
+const video1 = document.querySelector('#video1');
+const video2 = document.querySelector('#video2');
+
+const startStream = async (constraints, video) => {
+  await navigator.mediaDevices.getUserMedia(constraints).then((stream)=>{
+    handleStream(stream, video);
+  });
+};
+
+const handleStream = (stream, video) => {
+  video.srcObject = stream;
+};
+
+const getCameraSelection = async () => {
+    await navigator.mediaDevices.enumerateDevices().then((devices)=>{
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      const options = videoDevices.map(videoDevice => {
+        return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
+      });
+      options.push('<option value="none">Nenhuma</option>');
+      options.reverse()
+      options1.innerHTML = options.join('');
+      options2.innerHTML = options.join('');
+    })
+};
+
+options1.onchange = () => {
+  if(options1.value === "none"){
+    TirarCamera(video1)
+    return;
+  }
+
+  const newConst = {
+    video:{
+      deviceId: {
+        exact: options1.value
+      }
+  }
+};
+
+  startStream(newConst, video1);
+};
+options2.onchange = () => {
+  if(options2.value === "none"){
+    TirarCamera(video2)
+    return;
+  }
+
+  const newConst = {
+    video:{
+      deviceId: {
+        exact: options2.value
+      }
+  }
+};
+
+  startStream(newConst, video2);
+};
+
+    navigator.mediaDevices.getUserMedia({video: true})
+    .then(()=>{
+      getCameraSelection()
+    })
+    .catch((error) => {
+      console.log(error)
+      alert("Você deve dar permissão persistente à Camera, veja o tutorial em caso de dúvidas")
+    })
+</script>
+</body>
+</html>
